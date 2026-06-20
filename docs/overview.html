@@ -1,0 +1,148 @@
+<title>vue-pdf-live-render — architecture overview</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel2: #1d2129;
+    --line: #2b313c;
+    --ink: #e7eaf0;
+    --muted: #9aa3b2;
+    --faint: #6b7280;
+    --accent: #5b9dff;
+    --accent2: #57d9a3;
+    --warn: #f0b35b;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 40px 22px 72px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 0 0 10px; }
+  h1 { font-size: clamp(26px, 4.6vw, 40px); line-height: 1.1; margin: 0 0 14px; letter-spacing: -.02em; }
+  h1 .mono { font-family: var(--mono); font-weight: 700; }
+  .lede { font-size: clamp(15px, 2.3vw, 18px); color: var(--muted); max-width: 70ch; margin: 0 0 8px; }
+  h2 { font-size: 13px; font-family: var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 44px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 15px; margin: 0 0 6px; }
+  p { margin: 0 0 12px; }
+  code { font-family: var(--mono); font-size: .88em; background: var(--panel2); padding: 1px 5px; border-radius: 4px; color: #cfe0ff; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .grid2, .grid4 { grid-template-columns: 1fr; } }
+
+  /* insight cards */
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 16px; }
+  .card .n { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .card p { color: var(--muted); font-size: 13.5px; margin: 6px 0 0; }
+  .card strong { color: var(--ink); font-weight: 600; }
+
+  /* layer stack */
+  .stack { display: flex; flex-direction: column; gap: 8px; }
+  .layer { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: center;
+           background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .layer .tag { font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--ink);
+                background: var(--panel2); border: 1px solid var(--line); border-radius: 7px; text-align: center; padding: 7px 0; }
+  .layer .body small { color: var(--faint); font-family: var(--mono); font-size: 11px; }
+  .layer .body div.t { font-size: 14px; }
+  .layer .body div.d { color: var(--muted); font-size: 12.5px; }
+  .layer.core { border-color: #2f6f53; box-shadow: inset 0 0 0 1px rgba(87,217,163,.12); }
+  .layer.core .tag { color: var(--accent2); border-color: #2f6f53; }
+  .corebadge { color: var(--accent2); font-family: var(--mono); font-size: 11px; }
+
+  /* pipeline */
+  .pipe { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+  .step { flex: 1 1 130px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; position: relative; }
+  .step .k { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+  .step .v { font-size: 13px; margin-top: 3px; }
+  .step .s { color: var(--faint); font-size: 11.5px; margin-top: 4px; font-family: var(--mono); }
+  .arrow { align-self: center; color: var(--faint); padding: 0 6px; font-size: 18px; }
+  @media (max-width: 720px) { .arrow { transform: rotate(90deg); padding: 4px 0; width: 100%; text-align: center; } }
+
+  /* roadmap */
+  .rm { display: flex; flex-direction: column; gap: 8px; }
+  .ms { display: grid; grid-template-columns: 92px 1fr; gap: 14px; align-items: baseline; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+  .ms .id { font-family: var(--mono); font-size: 13px; }
+  .ms .done { color: var(--accent2); }
+  .ms .next { color: var(--warn); }
+  .ms .todo { color: var(--faint); }
+  .ms .g { font-size: 13.5px; }
+  .ms .g small { display:block; color: var(--muted); font-size: 12.5px; }
+  .pill { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .pill.done { color: var(--accent2); border-color: #2f6f53; }
+  .pill.next { color: var(--warn); border-color: #6b5326; }
+
+  .kpis { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; flex: 1 1 150px; }
+  .kpi b { font-size: 20px; font-family: var(--mono); }
+  .kpi span { display:block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .foot { color: var(--faint); font-size: 12px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .em { color: var(--ink); }
+</style>
+
+<h2 class="sr-only">Architecture overview of vue-pdf-live-render, a measurement-driven live-preview pagination engine for Vue and Tailwind documents</h2>
+
+<div class="wrap">
+  <p class="eyebrow">Architecture overview</p>
+  <h1><span class="mono">vue-pdf-live-render</span></h1>
+  <p class="lede">A live-preview pagination engine for <span class="em">Vue&nbsp;3&nbsp;+&nbsp;Tailwind</span> business documents — invoices, offers, delivery notes. Word-style multi-page layout with running headers/footers, page numbers and an instant preview of real page breaks. Content stays real Vue components; the final PDF is still printed by Puppeteer from the <em>same</em> DOM.</p>
+
+  <div class="kpis">
+    <div class="kpi"><b>1</b><span>galley render, then measure</span></div>
+    <div class="kpi"><b>0</b><span>component instances moved</span></div>
+    <div class="kpi"><b>5</b><span>layers · core is Vue-free</span></div>
+    <div class="kpi"><b>M1</b><span>walking skeleton — working</span></div>
+  </div>
+
+  <h2>The core insight</h2>
+  <p class="lede" style="font-size:15px">Four browser realities decide the whole design. The synthesis of them is: <span class="em">render once, measure, project — never relocate.</span></p>
+  <div class="grid2">
+    <div class="card"><span class="n">01 · no pouring</span><p><strong>You can't flow content into page boxes.</strong> CSS Regions are dead in Chromium and <code>element()</code> never shipped. You must paginate by measurement + DOM splitting.</p></div>
+    <div class="card"><span class="n">02 · screen is blind</span><p><strong><code>break-*</code> is inert on screen.</strong> It only acts inside a fragmentation container. So we measure real geometry ourselves and re-emit our decisions as forced breaks for print.</p></div>
+    <div class="card"><span class="n">03 · avoid is a lie</span><p><strong><code>break-inside:avoid</code> is a hint.</strong> LayoutNG ignores it under pressure. For the PDF we resolve every keep/orphan/widow rule and bake authoritative <code>break-before:page</code>.</p></div>
+    <div class="card"><span class="n">04 · don't fight Vue</span><p><strong>Moving live DOM breaks Vue.</strong> It patches in place against a fixed anchor. So instances are never cloned or relocated — a component spanning pages is <em>windowed</em>, not split.</p></div>
+  </div>
+
+  <h2>Layered architecture</h2>
+  <div class="stack">
+    <div class="layer"><div class="tag">L4</div><div class="body"><small>browser binding</small><div class="t">Print / Export</div><div class="d">Serializes the rendered pages (chrome + page numbers), one div per sheet, <code>@page margin:0</code> → existing Puppeteer <code>/print</code> → stored PDF.</div></div></div>
+    <div class="layer"><div class="tag">L3</div><div class="body"><small>vue binding</small><div class="t">Editing &amp; chrome</div><div class="d">Headers/footers, “Page X of Y”, manual breaks, page setup — all <em>outside</em> the model, written view-only (infinite-reflow defense).</div></div></div>
+    <div class="layer"><div class="tag">L2</div><div class="body"><small>vue binding</small><div class="t">Galley mount · scheduler · projection</div><div class="d">One off-canvas galley · fonts-gated rAF re-pagination · paper sheets rendered from layout data.</div></div></div>
+    <div class="layer"><div class="tag">L1</div><div class="body"><small>browser</small><div class="t">Measurement adapter</div><div class="d">The only DOM-reading code: <code>getBoundingClientRect</code> + <code>Range.getClientRects</code> → measured atoms.</div></div></div>
+    <div class="layer core"><div class="tag">L0</div><div class="body"><small>framework-agnostic — no Vue, no DOM</small><div class="t">Pagination core <span class="corebadge">— OSS-extractable · headless-testable</span></div><div class="d"><code>paginate(atoms, contentHeight) → PageLayout[]</code>. Greedy fill + backtrack, table/text splitting, minimum-progress invariant.</div></div></div>
+  </div>
+
+  <h2>The pipeline (one pass)</h2>
+  <div class="pipe">
+    <div class="step"><div class="k">render</div><div class="v">Galley</div><div class="s">once · content width · off-canvas</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="k">read</div><div class="v">Measure</div><div class="s">rects + per-line boxes</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="k">decide</div><div class="v">Paginate</div><div class="s">pure fn → PageLayout[]</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="k">write</div><div class="v">Project</div><div class="s">paper sheets + chrome</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="k">export</div><div class="v">Puppeteer</div><div class="s">rendered pages · 1 div / sheet</div></div>
+  </div>
+
+  <h2>Why not the existing tools</h2>
+  <div class="grid2">
+    <div class="card"><span class="n">paged.js / Vivliostyle</span><p>Built for <strong>books/prose</strong>. Clones &amp; moves content (loses component state), re-lays out the whole document on any change (no live reactivity), and can <strong>deadlock</strong> on oversized content. We keep their two good ideas — browser-measured layout + resumable break tokens — and fix the rest.</p></div>
+    <div class="card"><span class="n">@react-pdf / pdfmake</span><p>A separate layout engine (Yoga) with its own style dialect. Clean pagination, but <strong>you lose CSS/Tailwind fidelity</strong> and re-author every document. We measure the <em>real</em> rendered DOM instead, so there's no dialect to drift from.</p></div>
+  </div>
+
+  <h2>Roadmap</h2>
+  <div class="rm">
+    <div class="ms"><div class="id done">M1 ●</div><div class="g">Walking skeleton <span class="pill done">working</span><small>A4 geometry · block + table-row (repeated header) + text splitting · running header/footer · live “Page X of Y” · reflow on edit · print export.</small></div></div>
+    <div class="ms"><div class="id next">M2 ◐</div><div class="g">Robust fragmentation <span class="pill next">next</span><small>Recursive box-tree · rowspan map + row-count-conservation assert · flex/grid keep-together · break-appeal scoring · box-decoration across a cut.</small></div></div>
+    <div class="ms"><div class="id todo">M3 ○</div><div class="g">Incremental reflow<small>Dirty-from-page-k + downstream re-convergence · per-box height memo · fast per-keystroke on 100+ page docs.</small></div></div>
+    <div class="ms"><div class="id todo">M4 ○</div><div class="g">Live clip-window projection<small>Project the single live galley (instance preserved across pages) · affine pointer → caret hit-testing.</small></div></div>
+    <div class="ms"><div class="id todo">M5 ○</div><div class="g">Full WYSIWYG editing<small>Document model as source of truth · drag/resize · manual breaks &amp; page setup as constraints · undo/redo/collab.</small></div></div>
+    <div class="ms"><div class="id todo">M6 ○</div><div class="g">Parity CI + polish<small>Multicol oracle + printToPDF pixel-diff gates · footnotes / page floats · odd-even &amp; first-page headers.</small></div></div>
+  </div>
+
+  <p class="foot">Designed via a multi-agent pass — 6 research probes → 3 competing architectures → a 3-lens judge panel → synthesis. The candidates converged ~90%; the chosen design takes the cleanest core, grafts in continuation-fragment rendering for repeated headers, and adopts the cross-cutting agreements. Full spec in <code>docs/ARCHITECTURE.md</code>.</p>
+</div>
