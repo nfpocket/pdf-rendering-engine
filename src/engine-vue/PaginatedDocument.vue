@@ -131,7 +131,7 @@ defineExpose({ pages, warnings, isPaginating, geometry, print })
     </div>
 
     <!-- The visible paginated preview. THIS is what gets printed. -->
-    <div ref="pagesEl" class="vplr-pages flex flex-col items-center">
+    <div ref="pagesEl" class="vplr-pages">
       <div
         v-for="page in pages"
         :key="page.index"

@@ -1,6 +1,6 @@
 {
   "name": "@nfpocket/pdf-rendering-engine",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "A measurement-driven, live-preview pagination engine for Vue 3 + Tailwind documents (invoices, offers, delivery notes). Framework-agnostic core + Vue binding. The same DOM drives the on-screen preview and the Puppeteer printToPDF output.",
   "license": "MIT",

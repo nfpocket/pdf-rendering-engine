@@ -39,6 +39,10 @@ npm i @nfpocket/pdf-rendering-engine vue
 import '@nfpocket/pdf-rendering-engine/style.css'
 ```
 
+This stylesheet is **required and self-contained**: the engine's page layout
+does not depend on Tailwind. Tailwind (if you use it) only styles *your* document
+content in the slots.
+
 ```vue
 <script setup lang="ts">
 import { reactive } from 'vue'

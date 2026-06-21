@@ -25,6 +25,17 @@
   contain: none;
 }
 
+/*
+ * The stack of on-screen sheets. This layout MUST live here (not as Tailwind
+ * utility classes), so the engine lays itself out correctly regardless of
+ * whether — or how — the consuming app uses Tailwind.
+ */
+.vplr-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 /* The on-screen "paper" sheet. Exact device-px size from PageGeometry. */
 .vplr-page {
   position: relative;
@@ -33,6 +44,8 @@
     0 1px 3px rgba(0, 0, 0, 0.12),
     0 8px 24px rgba(0, 0, 0, 0.08);
   overflow: hidden; /* clip-window discipline: nothing escapes the sheet */
+  /* never let a flex/grid parent squeeze the exact page dimensions */
+  flex-shrink: 0;
 }
 
 /* Header / footer / background chrome bands, positioned inside the page. */
