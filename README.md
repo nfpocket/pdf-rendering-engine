@@ -1,6 +1,6 @@
 # vue-pdf-live-render
 
-[![npm](https://img.shields.io/npm/v/@nfpocket/pdf-rendering-engine.svg)](https://www.npmjs.com/package/@nfpocket/pdf-rendering-engine) [![license](https://img.shields.io/npm/l/@nfpocket/pdf-rendering-engine.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@nfpocket/pdf-rendering-engine.svg)](https://www.npmjs.com/package/@nfpocket/pdf-rendering-engine) [![license](https://img.shields.io/npm/l/@nfpocket/pdf-rendering-engine.svg)](LICENSE) [![Try it live on StackBlitz](https://img.shields.io/badge/StackBlitz-Try_it_live-1269D3?logo=stackblitz&logoColor=white)](https://stackblitz.com/edit/nfpocket-pdf-rendering-engine-vue?file=src%2FApp.vue)
 
 > Install as **`@nfpocket/pdf-rendering-engine`**.
 
@@ -11,6 +11,8 @@ real page breaks**, while the content stays real Vue components styled with real
 Tailwind, and the **final PDF is produced by Puppeteer from the same DOM**.
 
 ![Live paginated preview of an invoice with controls, running header logo and page numbers](docs/screenshots/hero.png)
+
+**▶ [Try it live on StackBlitz](https://stackblitz.com/edit/nfpocket-pdf-rendering-engine-vue?file=src%2FApp.vue)** — runs in your browser, edit `src/App.vue`, no install.
 
 This is the prototype / walking skeleton (milestone **M1**). See
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design and roadmap.
