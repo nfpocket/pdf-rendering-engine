@@ -190,14 +190,17 @@ function loadSampleLetterhead() {
               style="border-bottom: 2px solid var(--brand)"
             >
               <!-- h-full gives the group a DEFINITE height so the logo's
-                   max-height:100% actually resolves (else the SVG overflows). -->
+                   max-height:100% actually resolves (else the SVG overflows).
+                   The logo is the SAME size on every page (consistent branding);
+                   the first-page-different bits below are the address line and
+                   the "continued" label. -->
               <div class="flex h-full min-w-0 items-center gap-3">
                 <img
                   v-if="logoUrl"
                   :src="logoUrl"
                   alt="logo"
                   class="w-auto object-contain"
-                  :style="{ maxHeight: isFirstPage ? '100%' : '62%' }"
+                  :style="{ maxHeight: '100%' }"
                 />
                 <div class="min-w-0">
                   <div class="truncate text-sm font-semibold text-slate-800">
