@@ -1,17 +1,65 @@
 {
-  "name": "vue-pdf-live-render",
-  "version": "0.0.1",
-  "private": true,
+  "name": "@nfpocket/pdf-rendering-engine",
+  "version": "0.1.0",
   "type": "module",
-  "description": "A measurement-driven, live-preview pagination engine for Vue + Tailwind documents (invoices, offers, delivery notes). Framework-agnostic core + Vue binding. Same DOM drives the on-screen preview and the Puppeteer printToPDF output.",
+  "description": "A measurement-driven, live-preview pagination engine for Vue 3 + Tailwind documents (invoices, offers, delivery notes). Framework-agnostic core + Vue binding. The same DOM drives the on-screen preview and the Puppeteer printToPDF output.",
+  "license": "MIT",
+  "author": "Norman Feiß",
+  "homepage": "https://github.com/nfpocket/pdf-rendering-engine#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nfpocket/pdf-rendering-engine.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nfpocket/pdf-rendering-engine/issues"
+  },
+  "keywords": [
+    "vue",
+    "vue3",
+    "pdf",
+    "pagination",
+    "paginate",
+    "print",
+    "print-to-pdf",
+    "puppeteer",
+    "invoice",
+    "tailwind",
+    "wysiwyg",
+    "page-break",
+    "running-header",
+    "live-preview",
+    "report"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "vue-tsc -b --noEmit && vite build --config vite.config.lib.ts",
+    "build:demo": "vite build",
     "preview": "vite preview",
-    "typecheck": "vue-tsc -b --noEmit"
+    "typecheck": "vue-tsc -b --noEmit",
+    "screenshots": "node scripts/screenshots.mjs",
+    "prepublishOnly": "npm run build"
   },
-  "dependencies": {
-    "vue": "^3.5.13"
+  "peerDependencies": {
+    "vue": "^3.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
@@ -20,6 +68,8 @@
     "tailwindcss": "^4.0.0",
     "typescript": "~5.6.3",
     "vite": "^6.0.7",
+    "vite-plugin-dts": "^5.0.2",
+    "vue": "^3.5.13",
     "vue-tsc": "^2.2.0"
   }
 }

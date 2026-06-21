@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": false,
+    "types": ["vite/client"],
+    "outDir": "dist"
+  },
+  "include": [
+    "src/index.ts",
+    "src/core/**/*.ts",
+    "src/engine-vue/**/*.ts",
+    "src/engine-vue/**/*.vue",
+    "src/vite-env.d.ts"
+  ],
+  "exclude": ["src/demo", "src/App.vue", "src/main.ts", "scripts", "server"]
+}

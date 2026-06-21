@@ -1,5 +1,9 @@
 # vue-pdf-live-render
 
+[![npm](https://img.shields.io/npm/v/@nfpocket/pdf-rendering-engine.svg)](https://www.npmjs.com/package/@nfpocket/pdf-rendering-engine) [![license](https://img.shields.io/npm/l/@nfpocket/pdf-rendering-engine.svg)](LICENSE)
+
+> Install as **`@nfpocket/pdf-rendering-engine`**.
+
 A **live-preview pagination engine** for Vue 3 + Tailwind documents — invoices,
 offers, delivery notes, purchase orders. Word-style multi-page layout with
 **running headers/footers, page numbers, and an instant on-screen preview of
@@ -24,23 +28,56 @@ This is the prototype / walking skeleton (milestone **M1**). See
   </tr>
 </table>
 
-## Run it
+## Install & use
+
+```bash
+npm i @nfpocket/pdf-rendering-engine vue
+```
+
+```ts
+// once, anywhere in your app — ships the .vplr-* base styles:
+import '@nfpocket/pdf-rendering-engine/style.css'
+```
+
+```vue
+<script setup lang="ts">
+import { reactive } from 'vue'
+import { PaginatedDocument } from '@nfpocket/pdf-rendering-engine'
+
+const doc = reactive({ /* your reactive model */ })
+</script>
+
+<template>
+  <PaginatedDocument :model="doc" paper="A4" :margins-mm="{ top: 22, right: 18, bottom: 16, left: 18 }">
+    <template #document><!-- the WHOLE document, tagged with data-atom-* --></template>
+    <template #page="{ fragments }"><!-- render each computed fragment --></template>
+    <template #footer="{ pageNumber, totalPages }">Page {{ pageNumber }} / {{ totalPages }}</template>
+  </PaginatedDocument>
+</template>
+```
+
+Vue **3.4+** is a peer dependency. The package is ESM + TypeScript types,
+Chromium-targeted (the same DOM drives the on-screen preview and the Puppeteer
+print). The full, copy-pasteable walkthrough is in
+**[Tutorial](#tutorial-paginate-your-own-document)** below.
+
+## Develop this repo
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+npm run dev         # the live invoice demo at http://localhost:5173
+npm run build       # build the publishable library → dist/ (ESM + .d.ts + style.css)
+npm run build:demo  # build the demo app → dist-demo/
+npm run typecheck   # types only
+npm run screenshots # regenerate the README screenshots (needs `npm run dev` running)
 ```
 
-Drag the **Line items** slider (or change paper, margins, tax rate, buyer) and
-watch the page count, page breaks, repeated table header and footer page numbers
-re-flow **live** — no regenerate step. Click **Print / Export PDF** to open the
-print DOM (Ctrl/Cmd-P → Save as PDF) — that same DOM is what you'd POST to your
-Puppeteer `/print` endpoint (see [`server/print.example.mjs`](server/print.example.mjs)).
-
-```bash
-npm run build      # type-check (vue-tsc) + production build
-npm run typecheck  # types only
-```
+In the demo, drag the **Line items** slider (or change paper, margins, tax rate,
+brand colour, logo) and watch the page count, page breaks, repeated table header
+and footer page numbers re-flow **live** — no regenerate step. Click **Print /
+Export PDF** to open the print DOM (Ctrl/Cmd-P → Save as PDF) — that same DOM is
+what you'd POST to your Puppeteer `/print` endpoint (see
+[`server/print.example.mjs`](server/print.example.mjs)).
 
 ## What works today (M1)
 

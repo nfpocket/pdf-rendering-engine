@@ -1,0 +1,44 @@
+/*
+ * Base styles for the pagination engine. Required for correct measurement and
+ * on-screen page layout. Import once in your app:
+ *
+ *   import '@nfpocket/pdf-rendering-engine/style.css'
+ *
+ * (These are framework-agnostic plain CSS — no Tailwind, no resets. Bring your
+ * own design system for the document content.)
+ */
+
+/*
+ * The "galley" is the single off-canvas surface where the authored document is
+ * rendered ONCE at the exact printable content width and measured. It must be
+ * laid out by the browser (NOT display:none, NOT content-visibility:hidden) so
+ * getBoundingClientRect / Range.getClientRects report real geometry.
+ */
+.vplr-galley {
+  position: absolute;
+  top: 0;
+  left: -100000px;
+  /* width is set inline from PageGeometry.content.width */
+  visibility: hidden;
+  pointer-events: none;
+  /* never let an off-canvas scrollbar or viewport unit perturb measurement */
+  contain: none;
+}
+
+/* The on-screen "paper" sheet. Exact device-px size from PageGeometry. */
+.vplr-page {
+  position: relative;
+  background: #fff;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 8px 24px rgba(0, 0, 0, 0.08);
+  overflow: hidden; /* clip-window discipline: nothing escapes the sheet */
+}
+
+/* Header / footer / background chrome bands, positioned inside the page. */
+.vplr-chrome {
+  position: absolute;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+}
