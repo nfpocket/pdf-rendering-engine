@@ -48,6 +48,14 @@ export interface TextAtom extends AtomCommon {
   lineTops: number[] // length === lineCount + 1
   orphans: number // min lines that must remain before a break
   widows: number // min lines that must carry to the next page
+  /**
+   * Index into `lineTops` of the first *real glyph line*. Normally 0, but the
+   * measurer prepends a synthetic 0 entry when the first glyph line does not
+   * start at the border-box top (top padding / border / half-leading) so the
+   * first fragment's clip window includes that spacing. That leading entry is
+   * NOT a text line, so orphan/widow counts must skip it — hence this offset.
+   */
+  glyphStart?: number
 }
 
 export type Atom = BlockAtom | TableAtom | TextAtom

@@ -65,6 +65,7 @@ function measureAtom(el: HTMLElement): Atom {
   }
 
   if (kind === 'text') {
+    const { lineTops, glyphStart } = measureLineTops(el, rect.top, rect.height)
     return {
       id,
       kind: 'text',
@@ -72,7 +73,8 @@ function measureAtom(el: HTMLElement): Atom {
       keepWithNext,
       orphans: numAttr(el, 'data-orphans', 2),
       widows: numAttr(el, 'data-widows', 2),
-      lineTops: measureLineTops(el, rect.top, rect.height),
+      lineTops,
+      glyphStart,
     } satisfies TextAtom
   }
 
@@ -90,7 +92,7 @@ function measureLineTops(
   el: HTMLElement,
   elTop: number,
   elHeight: number,
-): number[] {
+): { lineTops: number[]; glyphStart: number } {
   const range = document.createRange()
   range.selectNodeContents(el)
   const rects = Array.from(range.getClientRects())
@@ -105,9 +107,18 @@ function measureLineTops(
     }
   }
   if (tops.length === 0) tops.push(0)
-  if (tops[0] > 0.5) tops.unshift(0)
+  // If the first glyph line does not start at the border-box top (top padding,
+  // a top border, or half-leading), prepend a non-glyph slice at 0 so the first
+  // fragment's clip window still includes that leading spacing. Record where the
+  // real glyph lines begin (glyphStart) so the paginator's orphan/widow counts
+  // treat this synthetic entry as spacing, not as a text line.
+  let glyphStart = 0
+  if (tops[0] > 0.5) {
+    tops.unshift(0)
+    glyphStart = 1
+  }
   tops.push(elHeight) // sentinel
-  return tops
+  return { lineTops: tops, glyphStart }
 }
 
 function numAttr(el: HTMLElement, name: string, fallback: number): number {

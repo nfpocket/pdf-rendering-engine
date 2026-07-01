@@ -60,7 +60,11 @@ export function usePagination(args: UsePaginationArgs) {
 
   onMounted(async () => {
     // Don't paginate against half-loaded fonts/images — that causes page drift.
+    // fonts.ready alone is not enough: an <img> that hasn't decoded yet reports
+    // ~0 height, so the first pass would mis-measure and the exported PDF could
+    // diverge from the eventual on-screen layout. Gate on both.
     if (document.fonts?.ready) await document.fonts.ready
+    await decodeImages(args.galley.value)
     schedule()
 
     resizeObserver = new ResizeObserver(() => schedule())
@@ -77,4 +81,26 @@ export function usePagination(args: UsePaginationArgs) {
   })
 
   return { pages, warnings, isPaginating, repaginate: schedule }
+}
+
+/**
+ * Resolve once every <img> in the galley has decoded (or failed). img.decode()
+ * is the reliable signal that the element has its intrinsic size and will lay
+ * out at its final height; without it a height:auto image measures as ~0px on
+ * the first pass. Failures resolve too — a broken image must not wedge the
+ * engine. Already-complete images resolve immediately.
+ */
+async function decodeImages(galley: HTMLElement | null): Promise<void> {
+  if (!galley) return
+  const imgs = Array.from(galley.querySelectorAll('img'))
+  await Promise.all(
+    imgs.map((img) => {
+      if (img.decode) return img.decode().catch(() => undefined)
+      if (img.complete) return Promise.resolve()
+      return new Promise<void>((resolve) => {
+        img.addEventListener('load', () => resolve(), { once: true })
+        img.addEventListener('error', () => resolve(), { once: true })
+      })
+    }),
+  )
 }
