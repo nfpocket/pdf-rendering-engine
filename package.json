@@ -52,6 +52,8 @@
     "build:demo": "vite build",
     "preview": "vite preview",
     "typecheck": "vue-tsc -b --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "screenshots": "node scripts/screenshots.mjs",
     "prepublishOnly": "npm run build"
   },
@@ -69,6 +71,7 @@
     "typescript": "~5.6.3",
     "vite": "^6.0.7",
     "vite-plugin-dts": "^5.0.2",
+    "vitest": "^3.2.6",
     "vue": "^3.5.13",
     "vue-tsc": "^2.2.0"
   }

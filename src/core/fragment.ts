@@ -31,15 +31,18 @@ export function paginate(
 ): PaginateResult {
   const warnings: string[] = []
   const pages: PageLayout[] = []
-  const maxPages =
-    opts.maxPages ??
-    (atoms.length +
-      atoms.reduce(
-        (n, a) => n + (a.kind === 'table' ? a.rows.length : 0),
-        0,
-      )) *
-      4 +
-      8
+  // The cap is a runaway-loop backstop, not a page limit. It must exceed the
+  // most pages any *legitimate* document can need: since minimum-progress places
+  // at least one block, table row, or text line per page, the true page count is
+  // bounded by the total count of those splittable units. Count text LINES too
+  // (not just 1 per text atom) — otherwise a long letter/contract authored as a
+  // single flowing text atom trips the cap and throws despite real progress.
+  const splittableUnits = atoms.reduce((n, a) => {
+    if (a.kind === 'table') return n + a.rows.length
+    if (a.kind === 'text') return n + Math.max(1, a.lineTops.length - 1)
+    return n + 1
+  }, 0)
+  const maxPages = opts.maxPages ?? splittableUnits * 4 + 8
 
   let current: Fragment[] = []
   let used = 0 // px consumed on the current page
@@ -72,6 +75,9 @@ export function paginate(
         atom.keepWithNext &&
         !pageEmpty() &&
         i + 1 < atoms.length &&
+        // If the next atom force-breaks to its own page, the two can never share
+        // a page — flushing here would only strand this block on a lonely page.
+        !atoms[i + 1].breakBefore &&
         atom.height + minHeightOf(atoms[i + 1]) > remaining() + EPSILON
       ) {
         flush()
@@ -112,6 +118,25 @@ export function paginate(
   // --- table ---------------------------------------------------------------
   function layoutTable(atom: TableAtom): void {
     const { rows, headerHeight, footerHeight } = atom
+
+    // A table with no body rows still has a header (and maybe a footer) to
+    // place — otherwise its chrome is silently dropped from the output.
+    if (rows.length === 0) {
+      if (!pageEmpty() && headerHeight + footerHeight > remaining() + EPSILON) {
+        flush()
+      }
+      current.push({
+        kind: 'table',
+        atomId: atom.id,
+        repeatHeader: true,
+        fromRow: 0,
+        toRow: 0,
+        continued: false,
+      })
+      used += headerHeight + footerHeight
+      return
+    }
+
     let row = 0
     let placedRows = 0
 
@@ -141,12 +166,28 @@ export function paginate(
       }
 
       if (row === fromRow) {
-        // Not even one row fits beneath the header.
+        // Not even one row fits beneath the header on this fragment.
+        const isLastRow = fromRow === rows.length - 1
+        const rowFits =
+          rows[fromRow].height <= remaining() - headerHeight + EPSILON
+
+        if (isLastRow && rowFits && !pageEmpty()) {
+          // The final row fits under the header, but not together with the
+          // footer. A fresh page may hold header + row + footer — move to one so
+          // the footer is not overflowed onto this partially-filled page.
+          flush()
+          continue
+        }
         if (pageEmpty()) {
-          // Oversized single row on an empty page: place it, overflow, advance.
+          // Oversized on an EMPTY page (the row alone is taller than the content
+          // box, or row + footer is and no page can hold both): place it, allow
+          // it to overflow, and advance so the engine always makes progress.
           warnings.push(
-            `Row "${rows[fromRow].id}" of table "${atom.id}" exceeds the page; ` +
-              `placed with overflow.`,
+            rowFits
+              ? `Row "${rows[fromRow].id}" of table "${atom.id}" plus its ` +
+                  `footer exceeds the page; placed with overflow.`
+              : `Row "${rows[fromRow].id}" of table "${atom.id}" exceeds the ` +
+                  `page; placed with overflow.`,
           )
           row++
         } else {
@@ -164,7 +205,11 @@ export function paginate(
         toRow: row,
         continued,
       })
-      used += headerHeight + sumRowHeights(atom, fromRow, row)
+      // Reserve the footer on the LAST fragment so it is accounted for in `used`
+      // — otherwise page height is undercounted and a trailing atom gets packed
+      // into the footer's band.
+      used +=
+        headerHeight + sumRowHeights(atom, fromRow, row) + (continued ? 0 : footerHeight)
       placedRows += row - fromRow
 
       if (continued) flush()
@@ -181,13 +226,18 @@ export function paginate(
   // --- text ----------------------------------------------------------------
   function layoutText(atom: TextAtom): void {
     const lineCount = atom.lineTops.length - 1
+    const gs = atom.glyphStart ?? 0
     const top = (line: number) => atom.lineTops[line]
     const sliceHeight = (a: number, b: number) => top(b) - top(a)
+    // Number of real glyph lines in the half-open range [from, to). A leading
+    // [0, gs) slice is non-glyph spacing (top padding/border) and does not count
+    // toward orphan/widow requirements. Tail lines are always glyph lines.
+    const glyphSpan = (from: number, to: number) => to - Math.max(from, gs)
 
     let line = 0
     while (line < lineCount) {
       const fromLine = line
-      // pack lines until the next one would overflow
+      // pack whole line boxes until the next one would overflow
       while (
         line < lineCount &&
         sliceHeight(fromLine, line + 1) <= remaining() + EPSILON
@@ -204,19 +254,25 @@ export function paginate(
         }
       }
 
-      // Widows: if the remainder would leave < widows lines on the next page,
-      // pull lines back so the tail has at least `widows` lines.
+      // Widows: keep at least `widows` glyph lines in the tail, as long as
+      // pulling lines back still leaves ≥1 glyph line on the current page.
+      // (The old guard `line - fromLine > widows` no-op'd whenever the page held
+      // ≤ widows lines — the exact case that produces a widow.)
       const tail = lineCount - line
-      if (tail > 0 && tail < atom.widows && line - fromLine > atom.widows) {
+      if (
+        tail > 0 &&
+        tail < atom.widows &&
+        glyphSpan(fromLine, line) > atom.widows - tail
+      ) {
         line -= atom.widows - tail
       }
 
-      // Orphans: don't strand fewer than `orphans` lines at the bottom of a
-      // page that already has content — push the whole run to the next page.
+      // Orphans: don't strand fewer than `orphans` glyph lines at the bottom of
+      // a page that already has content — push the whole run to the next page.
       if (
         fromLine === 0 &&
         !pageEmpty() &&
-        line - fromLine < atom.orphans &&
+        glyphSpan(fromLine, line) < atom.orphans &&
         line < lineCount
       ) {
         flush()
